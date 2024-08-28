@@ -1,4 +1,4 @@
-Redis Data Dump Utility 
+Redis Data Dump Utility ⚙️
 
 
 Описание
