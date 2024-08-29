@@ -11,23 +11,24 @@ def dump_redis_to_file(redis_client, db_number, key_pattern=None, file_path='dum
         cursor, keys = redis_client.scan(cursor, match=key_pattern or '*', count=1000)
         for key in keys:
             key_type = redis_client.type(key).decode()
+            key = key.decode()
             if key_type == 'string':
-                dump[key.decode()] = redis_client.get(key).decode()
+                dump[key] = redis_client.get(key).decode()
             elif key_type == 'list':
-                dump[key.decode()] = redis_client.lrange(key, 0, -1)
+                dump[key] = redis_client.lrange(key, 0, -1)
             elif key_type == 'set':
-                dump[key.decode()] = redis_client.smembers(key)
+                dump[key] = list(redis_client.smembers(key))
             elif key_type == 'zset':
-                dump[key.decode()] = redis_client.zrange(key, 0, -1, withscores=True)
+                dump[key] = redis_client.zrange(key, 0, -1, withscores=True)
             elif key_type == 'hash':
-                dump[key.decode()] = redis_client.hgetall(key)
+                dump[key] = redis_client.hgetall(key)
             else:
-                dump[key.decode()] = 'Unsupported type'
+                dump[key] = 'Unsupported type'
         if cursor == 0:
             break
 
     with open(file_path, 'w') as f:
-        json.dump(dump, f, indent=4)
+        json.dump(dump, f, indent=4, default=str)
 
 
 def load_file_to_redis(redis_client, file_path, db_number):
@@ -37,16 +38,22 @@ def load_file_to_redis(redis_client, file_path, db_number):
 
     for key, value in dump.items():
         if isinstance(value, list) and value:
-            if isinstance(value[0], dict):  # List of hash fields
+            # Handle lists and sets
+            if isinstance(value[0], dict):  # If the value is a list of hashes
                 redis_client.hmset(key, {k: v for d in value for k, v in d.items()})
             else:  # List or set values
                 redis_client.rpush(key, *value)
-        elif isinstance(value, set):
-            redis_client.sadd(key, *value)
-        elif isinstance(value, dict):  # Hash type
+        elif isinstance(value, dict):
+            # Handle hash type
             redis_client.hmset(key, value)
-        else:  # String or other types
+        elif isinstance(value, str):
+            # Handle string type
             redis_client.set(key, value)
+        elif isinstance(value, list) and not value:
+            # Handle empty lists (usually needs special treatment)
+            pass
+        else:
+            print(f"Unsupported type for key {key}: {type(value)}")
 
 
 def main():
