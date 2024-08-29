@@ -2,7 +2,6 @@ import redis
 import json
 import os
 
-
 def dump_redis_to_file(redis_client, db_number, key_pattern=None, file_path='dump.json'):
     redis_client.execute_command('SELECT', db_number)
     cursor = 0
@@ -10,26 +9,25 @@ def dump_redis_to_file(redis_client, db_number, key_pattern=None, file_path='dum
     while True:
         cursor, keys = redis_client.scan(cursor, match=key_pattern or '*', count=1000)
         for key in keys:
-            key_type = redis_client.type(key).decode()
             key = key.decode()
+            key_type = redis_client.type(key).decode()
             if key_type == 'string':
                 dump[key] = redis_client.get(key).decode()
             elif key_type == 'list':
-                dump[key] = redis_client.lrange(key, 0, -1)
+                dump[key] = [item.decode() for item in redis_client.lrange(key, 0, -1)]
             elif key_type == 'set':
-                dump[key] = list(redis_client.smembers(key))
+                dump[key] = [item.decode() for item in redis_client.smembers(key)]
             elif key_type == 'zset':
-                dump[key] = redis_client.zrange(key, 0, -1, withscores=True)
+                dump[key] = [(item.decode(), score) for item, score in redis_client.zrange(key, 0, -1, withscores=True)]
             elif key_type == 'hash':
-                dump[key] = redis_client.hgetall(key)
+                dump[key] = {k.decode(): v.decode() for k, v in redis_client.hgetall(key).items()}
             else:
                 dump[key] = 'Unsupported type'
         if cursor == 0:
             break
 
     with open(file_path, 'w') as f:
-        json.dump(dump, f, indent=4, default=str)
-
+        json.dump(dump, f, indent=4)
 
 def load_file_to_redis(redis_client, file_path, db_number):
     redis_client.execute_command('SELECT', db_number)
