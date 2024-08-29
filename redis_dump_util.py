@@ -12,15 +12,18 @@ def dump_redis_to_file(redis_client, db_number, key_pattern=None, file_path='dum
             key = key.decode()
             key_type = redis_client.type(key).decode()
             if key_type == 'string':
-                dump[key] = redis_client.get(key).decode()
+                try:
+                    dump[key] = redis_client.get(key).decode('utf-8')
+                except UnicodeDecodeError:
+                    dump[key] = redis_client.get(key)  # Store as binary data
             elif key_type == 'list':
-                dump[key] = [item.decode() for item in redis_client.lrange(key, 0, -1)]
+                dump[key] = [item.decode('utf-8') if isinstance(item, bytes) else item for item in redis_client.lrange(key, 0, -1)]
             elif key_type == 'set':
-                dump[key] = [item.decode() for item in redis_client.smembers(key)]
+                dump[key] = [item.decode('utf-8') if isinstance(item, bytes) else item for item in redis_client.smembers(key)]
             elif key_type == 'zset':
-                dump[key] = [(item.decode(), score) for item, score in redis_client.zrange(key, 0, -1, withscores=True)]
+                dump[key] = [(item.decode('utf-8') if isinstance(item, bytes) else item, score) for item, score in redis_client.zrange(key, 0, -1, withscores=True)]
             elif key_type == 'hash':
-                dump[key] = {k.decode(): v.decode() for k, v in redis_client.hgetall(key).items()}
+                dump[key] = {k.decode('utf-8') if isinstance(k, bytes) else k: v.decode('utf-8') if isinstance(v, bytes) else v for k, v in redis_client.hgetall(key).items()}
             else:
                 dump[key] = 'Unsupported type'
         if cursor == 0:
@@ -50,9 +53,11 @@ def load_file_to_redis(redis_client, file_path, db_number):
         elif isinstance(value, str):
             # Handle string type
             redis_client.set(key, value)
+        elif isinstance(value, bytes):
+            # Handle binary data
+            redis_client.set(key, value)
         else:
             print(f"Unsupported type for key {key}: {type(value)}")
-
 
 def main():
     redis_host = input("Введите хост Redis: ").strip()
@@ -81,7 +86,6 @@ def main():
 
     else:
         print("Неверный выбор")
-
 
 if __name__ == "__main__":
     main()
