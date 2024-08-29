@@ -1,3 +1,4 @@
+[![Pylint](https://github.com/iwizard7/redis-dump-restore/actions/workflows/pylint.yml/badge.svg)](https://github.com/iwizard7/redis-dump-restore/actions/workflows/pylint.yml)
 # Redis Data Dump Utility ⚙️
 
 ## Описание
