@@ -1,0 +1,7 @@
+channels:
+  - defaults
+dependencies:
+  - python=3.9  # Adjust to your preferred Python version
+  - pip
+  - pip:
+    - redis
