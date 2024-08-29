@@ -60,8 +60,13 @@ def load_file_to_redis(redis_client, file_path, db_number):
             print(f"Unsupported type for key {key}: {type(value)}")
 
 def main():
-    redis_host = input("Введите хост Redis: ").strip()
-    redis_port = int(input("Введите порт Redis: ").strip())
+    redis_host = input("Введите хост Redis (или оставьте пустым для использования по умолчанию 127.0.0.1): ").strip()
+    if not redis_host:
+        redis_host = '127.0.0.1'
+
+    redis_port_input = input("Введите порт Redis (или оставьте пустым для использования по умолчанию 6379): ").strip()
+    redis_port = int(redis_port_input) if redis_port_input else 6379
+
     redis_password = input("Введите пароль Redis (или оставьте пустым, если нет пароля): ").strip()
 
     redis_client = redis.Redis(host=redis_host, port=redis_port, password=redis_password)
