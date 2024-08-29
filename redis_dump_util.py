@@ -35,21 +35,21 @@ def load_file_to_redis(redis_client, file_path, db_number):
         dump = json.load(f)
 
     for key, value in dump.items():
-        if isinstance(value, list) and value:
-            # Handle lists and sets
-            if isinstance(value[0], dict):  # If the value is a list of hashes
-                redis_client.hmset(key, {k: v for d in value for k, v in d.items()})
-            else:  # List or set values
+        if isinstance(value, list):
+            if all(isinstance(item, str) for item in value):
+                # Handle lists of strings
                 redis_client.rpush(key, *value)
+            elif all(isinstance(item, list) and len(item) == 2 and isinstance(item[0], str) and isinstance(item[1], (int, float)) for item in value):
+                # Handle sorted sets (zset)
+                redis_client.zadd(key, {item[0]: item[1] for item in value})
+            else:
+                print(f"Unsupported list format for key {key}")
         elif isinstance(value, dict):
             # Handle hash type
-            redis_client.hmset(key, value)
+            redis_client.hset(key, mapping=value)
         elif isinstance(value, str):
             # Handle string type
             redis_client.set(key, value)
-        elif isinstance(value, list) and not value:
-            # Handle empty lists (usually needs special treatment)
-            pass
         else:
             print(f"Unsupported type for key {key}: {type(value)}")
 
