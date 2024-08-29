@@ -55,10 +55,11 @@ def load_file_to_redis(redis_client, file_path, db_number):
 
 
 def main():
-    redis_host = 'localhost'
-    redis_port = 6379
+    redis_host = input("Введите хост Redis: ").strip()
+    redis_port = int(input("Введите порт Redis: ").strip())
+    redis_password = input("Введите пароль Redis (или оставьте пустым, если нет пароля): ").strip()
 
-    redis_client = redis.Redis(host=redis_host, port=redis_port)
+    redis_client = redis.Redis(host=redis_host, port=redis_port, password=redis_password)
 
     choice = input("Выберите действие (1 - сохранить в файл, 2 - загрузить из файла): ").strip()
 
