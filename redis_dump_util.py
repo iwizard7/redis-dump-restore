@@ -1,8 +1,18 @@
-import redis
+"""Модуль для работы с Redis: сохранение и загрузка данных."""
+
 import json
 import os
+import redis
 
 def dump_redis_to_file(redis_client, db_number, key_pattern=None, file_path='dump.json'):
+    """
+    Сохраняет данные Redis в файл JSON.
+
+    :param redis_client: Клиент Redis
+    :param db_number: Номер базы данных
+    :param key_pattern: Шаблон ключа для фильтрации
+    :param file_path: Путь к файлу для сохранения
+    """
     redis_client.execute_command('SELECT', db_number)
     cursor = 0
     dump = {}
@@ -17,24 +27,44 @@ def dump_redis_to_file(redis_client, db_number, key_pattern=None, file_path='dum
                 except UnicodeDecodeError:
                     dump[key] = redis_client.get(key)  # Store as binary data
             elif key_type == 'list':
-                dump[key] = [item.decode('utf-8') if isinstance(item, bytes) else item for item in redis_client.lrange(key, 0, -1)]
+                dump[key] = [
+                    item.decode('utf-8') if isinstance(item, bytes) else item
+                    for item in redis_client.lrange(key, 0, -1)
+                ]
             elif key_type == 'set':
-                dump[key] = [item.decode('utf-8') if isinstance(item, bytes) else item for item in redis_client.smembers(key)]
+                dump[key] = [
+                    item.decode('utf-8') if isinstance(item, bytes) else item
+                    for item in redis_client.smembers(key)
+                ]
             elif key_type == 'zset':
-                dump[key] = [(item.decode('utf-8') if isinstance(item, bytes) else item, score) for item, score in redis_client.zrange(key, 0, -1, withscores=True)]
+                dump[key] = [
+                    (item.decode('utf-8') if isinstance(item, bytes) else item, score)
+                    for item, score in redis_client.zrange(key, 0, -1, withscores=True)
+                ]
             elif key_type == 'hash':
-                dump[key] = {k.decode('utf-8') if isinstance(k, bytes) else k: v.decode('utf-8') if isinstance(v, bytes) else v for k, v in redis_client.hgetall(key).items()}
+                dump[key] = {
+                    k.decode('utf-8') if isinstance(k, bytes) else k:
+                    v.decode('utf-8') if isinstance(v, bytes) else v
+                    for k, v in redis_client.hgetall(key).items()
+                }
             else:
                 dump[key] = 'Unsupported type'
         if cursor == 0:
             break
 
-    with open(file_path, 'w') as f:
+    with open(file_path, 'w', encoding='utf-8') as f:
         json.dump(dump, f, indent=4)
 
 def load_file_to_redis(redis_client, file_path, db_number):
+    """
+    Загружает данные из файла JSON в Redis.
+
+    :param redis_client: Клиент Redis
+    :param file_path: Путь к файлу с данными
+    :param db_number: Номер базы данных
+    """
     redis_client.execute_command('SELECT', db_number)
-    with open(file_path, 'r') as f:
+    with open(file_path, 'r', encoding='utf-8') as f:
         dump = json.load(f)
 
     for key, value in dump.items():
