@@ -105,8 +105,8 @@ def main():
 
     if choice == '1':
         db_number = int(input("Введите номер базы данных Redis: ").strip())
-        key_pattern = input("Введите маску ключа (или оставьте пустым для всех ключей): ").strip()
-        file_path = input("Введите путь к файлу для сохранения дампа (например, 'user:*' или оставьте пустым для всех ключей): ").strip()
+        key_pattern = input("Введите маску ключа (например, 'user:*' или оставьте пустым для всех ключей): ").strip()
+        file_path = input("Введите путь к файлу для сохранения дампа: ").strip()
         dump_redis_to_file(redis_client, db_number, key_pattern, file_path)
         print(f"Дамп сохранен в {file_path}")
 
