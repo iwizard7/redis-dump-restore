@@ -70,34 +70,42 @@ def load_file_to_redis(redis_client, file_path, db_number):
     for key, value in dump.items():
         if isinstance(value, list):
             if all(isinstance(item, str) for item in value):
-                # Handle lists of strings
                 redis_client.rpush(key, *value)
-            elif all(isinstance(item, list) and len(item) == 2 and isinstance(item[0], str) and isinstance(item[1], (int, float)) for item in value):
-                # Handle sorted sets (zset)
+            elif all(
+                isinstance(item, list) and len(item) == 2 and 
+                isinstance(item[0], str) and isinstance(item[1], (int, float))
+                for item in value
+            ):
                 redis_client.zadd(key, {item[0]: item[1] for item in value})
             else:
                 print(f"Unsupported list format for key {key}")
         elif isinstance(value, dict):
-            # Handle hash type
             redis_client.hset(key, mapping=value)
         elif isinstance(value, str):
-            # Handle string type
             redis_client.set(key, value)
         elif isinstance(value, bytes):
-            # Handle binary data
             redis_client.set(key, value)
         else:
             print(f"Unsupported type for key {key}: {type(value)}")
 
 def main():
-    redis_host = input("Введите хост Redis (или оставьте пустым для использования по умолчанию 127.0.0.1): ").strip()
+    """
+    Основная функция для взаимодействия с пользователем и выполнения операций.
+    """
+    redis_host = input(
+        "Введите хост Redis (или оставьте пустым для использования по умолчанию 127.0.0.1): "
+    ).strip()
     if not redis_host:
         redis_host = '127.0.0.1'
 
-    redis_port_input = input("Введите порт Redis (или оставьте пустым для использования по умолчанию 6379): ").strip()
+    redis_port_input = input(
+        "Введите порт Redis (или оставьте пустым для использования по умолчанию 6379): "
+    ).strip()
     redis_port = int(redis_port_input) if redis_port_input else 6379
 
-    redis_password = input("Введите пароль Redis (или оставьте пустым, если нет пароля): ").strip()
+    redis_password = input(
+        "Введите пароль Redis (или оставьте пустым, если нет пароля): "
+    ).strip()
 
     redis_client = redis.Redis(host=redis_host, port=redis_port, password=redis_password)
 
@@ -105,7 +113,9 @@ def main():
 
     if choice == '1':
         db_number = int(input("Введите номер базы данных Redis: ").strip())
-        key_pattern = input("Введите маску ключа (например, 'user:*' или оставьте пустым для всех ключей): ").strip()
+        key_pattern = input(
+            "Введите маску ключа (например, 'user:*' или оставьте пустым для всех ключей): "
+        ).strip()
         file_path = input("Введите путь к файлу для сохранения дампа: ").strip()
         dump_redis_to_file(redis_client, db_number, key_pattern, file_path)
         print(f"Дамп сохранен в {file_path}")
