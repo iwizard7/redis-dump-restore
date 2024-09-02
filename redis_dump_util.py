@@ -72,7 +72,7 @@ def load_file_to_redis(redis_client, file_path, db_number):
             if all(isinstance(item, str) for item in value):
                 redis_client.rpush(key, *value)
             elif all(
-                isinstance(item, list) and len(item) == 2 and 
+                isinstance(item, list) and len(item) == 2 and
                 isinstance(item[0], str) and isinstance(item[1], (int, float))
                 for item in value
             ):
